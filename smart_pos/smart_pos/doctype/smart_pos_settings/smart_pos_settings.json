@@ -1,0 +1,328 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "section_general",
+  "default_pos_profile",
+  "default_company",
+  "default_warehouse",
+  "column_break_general",
+  "default_customer",
+  "default_income_account",
+  "default_tax_template",
+  "section_offline",
+  "enable_offline_mode",
+  "sync_interval",
+  "max_offline_days",
+  "column_break_offline",
+  "auto_sync_on_connect",
+  "offline_data_limit_mb",
+  "section_hardware",
+  "enable_barcode_scanning",
+  "barcode_scan_delay",
+  "column_break_hardware",
+  "enable_cash_drawer",
+  "cash_drawer_command",
+  "section_printing",
+  "enable_auto_print",
+  "default_print_format",
+  "printer_type",
+  "column_break_printing",
+  "printer_ip",
+  "printer_port",
+  "section_loyalty",
+  "enable_loyalty_program",
+  "default_loyalty_program",
+  "points_per_currency",
+  "column_break_loyalty",
+  "min_points_to_redeem",
+  "redemption_value",
+  "section_ui",
+  "theme",
+  "show_stock_qty",
+  "column_break_ui",
+  "items_per_page",
+  "enable_quick_keys"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "section_general",
+   "fieldtype": "Section Break",
+   "label": "General Settings"
+  },
+  {
+   "fieldname": "default_pos_profile",
+   "fieldtype": "Link",
+   "label": "Default POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Default Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_general",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_customer",
+   "fieldtype": "Link",
+   "label": "Default Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "default_income_account",
+   "fieldtype": "Link",
+   "label": "Default Income Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "default_tax_template",
+   "fieldtype": "Link",
+   "label": "Default Tax Template",
+   "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "section_offline",
+   "fieldtype": "Section Break",
+   "label": "Offline Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_offline_mode",
+   "fieldtype": "Check",
+   "label": "Enable Offline Mode"
+  },
+  {
+   "default": "30",
+   "description": "Sync interval in seconds",
+   "fieldname": "sync_interval",
+   "fieldtype": "Int",
+   "label": "Sync Interval (seconds)"
+  },
+  {
+   "default": "7",
+   "description": "Maximum days to keep offline data",
+   "fieldname": "max_offline_days",
+   "fieldtype": "Int",
+   "label": "Max Offline Days"
+  },
+  {
+   "fieldname": "column_break_offline",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_sync_on_connect",
+   "fieldtype": "Check",
+   "label": "Auto Sync on Reconnect"
+  },
+  {
+   "default": "100",
+   "description": "Maximum offline data storage in MB",
+   "fieldname": "offline_data_limit_mb",
+   "fieldtype": "Int",
+   "label": "Offline Data Limit (MB)"
+  },
+  {
+   "fieldname": "section_hardware",
+   "fieldtype": "Section Break",
+   "label": "Hardware Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_barcode_scanning",
+   "fieldtype": "Check",
+   "label": "Enable Barcode Scanning"
+  },
+  {
+   "default": "50",
+   "description": "Delay in milliseconds between barcode scans",
+   "fieldname": "barcode_scan_delay",
+   "fieldtype": "Int",
+   "label": "Barcode Scan Delay (ms)"
+  },
+  {
+   "fieldname": "column_break_hardware",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_cash_drawer",
+   "fieldtype": "Check",
+   "label": "Enable Cash Drawer"
+  },
+  {
+   "depends_on": "enable_cash_drawer",
+   "fieldname": "cash_drawer_command",
+   "fieldtype": "Data",
+   "label": "Cash Drawer Command"
+  },
+  {
+   "fieldname": "section_printing",
+   "fieldtype": "Section Break",
+   "label": "Printing Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_auto_print",
+   "fieldtype": "Check",
+   "label": "Auto Print on Submit"
+  },
+  {
+   "fieldname": "default_print_format",
+   "fieldtype": "Link",
+   "label": "Default Print Format",
+   "options": "Print Format"
+  },
+  {
+   "default": "Browser",
+   "fieldname": "printer_type",
+   "fieldtype": "Select",
+   "label": "Printer Type",
+   "options": "Browser\nNetwork\nUSB\nBluetooth"
+  },
+  {
+   "fieldname": "column_break_printing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.printer_type=='Network'",
+   "fieldname": "printer_ip",
+   "fieldtype": "Data",
+   "label": "Printer IP Address"
+  },
+  {
+   "default": "9100",
+   "depends_on": "eval:doc.printer_type=='Network'",
+   "fieldname": "printer_port",
+   "fieldtype": "Int",
+   "label": "Printer Port"
+  },
+  {
+   "fieldname": "section_loyalty",
+   "fieldtype": "Section Break",
+   "label": "Loyalty Program"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_loyalty_program",
+   "fieldtype": "Check",
+   "label": "Enable Loyalty Program"
+  },
+  {
+   "depends_on": "enable_loyalty_program",
+   "fieldname": "default_loyalty_program",
+   "fieldtype": "Link",
+   "label": "Default Loyalty Program",
+   "options": "Loyalty Program"
+  },
+  {
+   "default": "1",
+   "depends_on": "enable_loyalty_program",
+   "description": "Points earned per currency unit spent",
+   "fieldname": "points_per_currency",
+   "fieldtype": "Float",
+   "label": "Points Per Currency"
+  },
+  {
+   "fieldname": "column_break_loyalty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "100",
+   "depends_on": "enable_loyalty_program",
+   "fieldname": "min_points_to_redeem",
+   "fieldtype": "Int",
+   "label": "Min Points to Redeem"
+  },
+  {
+   "default": "0.01",
+   "depends_on": "enable_loyalty_program",
+   "description": "Currency value per loyalty point",
+   "fieldname": "redemption_value",
+   "fieldtype": "Float",
+   "label": "Redemption Value"
+  },
+  {
+   "fieldname": "section_ui",
+   "fieldtype": "Section Break",
+   "label": "UI Settings"
+  },
+  {
+   "default": "Modern Blue",
+   "fieldname": "theme",
+   "fieldtype": "Select",
+   "label": "Theme",
+   "options": "Modern Blue\nDark Mode\nLight Mode\nHigh Contrast"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_stock_qty",
+   "fieldtype": "Check",
+   "label": "Show Stock Quantity"
+  },
+  {
+   "fieldname": "column_break_ui",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "20",
+   "fieldname": "items_per_page",
+   "fieldtype": "Int",
+   "label": "Items Per Page"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_quick_keys",
+   "fieldtype": "Check",
+   "label": "Enable Quick Keys"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Smart POS",
+ "name": "Smart POS Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "POS User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -1,0 +1,32 @@
+/**
+ * Smart POS - Global Styles
+ */
+
+/* Offline indicator */
+body.offline::after {
+    content: 'Offline';
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #ff6b35;
+    color: white;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+    z-index: 9999;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* POS specific overrides */
+[data-page-container="pos-terminal"] .page-container {
+    background: #f4f6f8;
+}
+
+[data-page-container="pos-terminal"] .layout-main {
+    padding: 0;
+}
+
+[data-page-container="pos-terminal"] .page-body {
+    padding: 0;
+}

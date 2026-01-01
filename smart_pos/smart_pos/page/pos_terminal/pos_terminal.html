@@ -1,0 +1,408 @@
+<div class="pos-terminal-container" id="pos-container">
+    <!-- Loading Overlay -->
+    <div id="pos-loading" class="pos-loading-overlay">
+        <div class="pos-loading-spinner">
+            <div class="spinner"></div>
+            <p data-translate="loading_pos">Loading POS...</p>
+        </div>
+    </div>
+
+    <!-- Session Selection Modal -->
+    <div id="session-modal" class="pos-modal" style="display: none;">
+        <div class="pos-modal-content">
+            <div class="pos-modal-header">
+                <h2>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <span data-translate="start_new_session">Start New Session</span>
+                </h2>
+            </div>
+            <div class="pos-modal-body">
+                <div class="form-group">
+                    <label data-translate="pos_profile">POS Profile</label>
+                    <select id="pos-profile-select" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label data-translate="opening_cash">Opening Cash</label>
+                    <input type="number" id="opening-cash" class="form-control" value="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label data-translate="notes_optional">Notes (Optional)</label>
+                    <textarea id="opening-notes" class="form-control" rows="2" data-translate-placeholder="add_notes"></textarea>
+                </div>
+            </div>
+            <div class="pos-modal-footer">
+                <button class="btn btn-primary btn-lg" id="start-session-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    <span data-translate="start_session">Start Session</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main POS Interface -->
+    <div id="pos-main" class="pos-main" style="display: none;">
+        <!-- Header -->
+        <header class="pos-header">
+            <div class="pos-header-left">
+                <div class="pos-logo">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <span>Smart POS</span>
+                </div>
+                <div class="pos-session-info">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span id="session-profile">-</span>
+                    <span>•</span>
+                    <span id="session-user">-</span>
+                </div>
+            </div>
+            <div class="pos-header-center">
+                <div class="pos-sync-status online" id="sync-status">
+                    <div class="pos-status-icon" id="status-icon">
+                        <svg class="icon-online" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                            <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                        </svg>
+                        <svg class="icon-offline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+                            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+                            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+                            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                            <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                        </svg>
+                        <svg class="icon-syncing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                    </div>
+                    <span id="status-text" data-translate="online">Online</span>
+                </div>
+            </div>
+            <div class="pos-header-right">
+                <button class="pos-header-btn" id="btn-fullscreen" data-translate-title="fullscreen">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                    </svg>
+                </button>
+                <button class="pos-header-btn" id="btn-settings" data-translate-title="settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </button>
+                <button class="pos-header-btn btn-danger" id="btn-close-session" data-translate-title="close_session">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="pos-content">
+            <!-- Cart Panel (Right side for RTL) -->
+            <div class="pos-cart-panel">
+                <!-- Cart Header -->
+                <div class="pos-cart-header">
+                    <div class="pos-cart-title">
+                        <h3>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="9" cy="21" r="1"/>
+                                <circle cx="20" cy="21" r="1"/>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                            </svg>
+                            <span data-translate="cart">Cart</span>
+                            <span class="pos-cart-count" id="cart-count">0</span>
+                        </h3>
+                        <button class="pos-clear-cart" id="clear-cart" data-translate="clear_all">Clear All</button>
+                    </div>
+                    
+                    <!-- Customer Selection -->
+                    <div class="pos-customer-select" id="customer-select">
+                        <div class="pos-customer-avatar">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="pos-customer-info">
+                            <div class="pos-customer-name" id="selected-customer-name" data-translate="default_customer">Default Customer</div>
+                            <div class="pos-customer-hint" data-translate="click_to_select_customer">Click to select customer</div>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Cart Items -->
+                <div class="pos-cart-items" id="cart-items">
+                    <div class="pos-cart-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="9" cy="21" r="1"/>
+                            <circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                        </svg>
+                        <p data-translate="cart_empty">Cart is empty</p>
+                        <span data-translate="add_products_to_start">Add products to start</span>
+                    </div>
+                </div>
+
+                <!-- Cart Footer -->
+                <div class="pos-cart-footer">
+                    <!-- Summary -->
+                    <div class="pos-cart-summary">
+                        <div class="pos-summary-row">
+                            <span data-translate="subtotal">Subtotal</span>
+                            <span class="pos-summary-value" id="cart-subtotal">0.00</span>
+                        </div>
+                        <div class="pos-summary-row">
+                            <span data-translate="tax">Tax</span>
+                            <span class="pos-summary-value" id="cart-tax">0.00</span>
+                        </div>
+                        <div class="pos-summary-row">
+                            <span data-translate="discount">Discount</span>
+                            <span class="pos-summary-value" id="cart-discount">0.00</span>
+                        </div>
+                        <div class="pos-summary-row total">
+                            <span data-translate="total">Total</span>
+                            <span class="pos-summary-value" id="cart-total">0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Button -->
+                    <button class="pos-pay-btn" id="pay-btn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <span data-translate="pay">Pay</span>
+                        <span id="pay-amount">0.00</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products Panel -->
+            <div class="pos-products-panel">
+                <!-- Search Bar -->
+                <div class="pos-search-bar">
+                    <div class="pos-search-input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="product-search" class="pos-search-input" 
+                               data-translate-placeholder="search_product_or_barcode" autofocus>
+                        <button class="pos-search-clear" id="clear-search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Tabs -->
+                <div class="pos-categories" id="categories-container">
+                    <button class="pos-category-btn active" data-group="all">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                        <span data-translate="all">All</span>
+                    </button>
+                </div>
+
+                <!-- Products Grid -->
+                <div class="pos-products-grid" id="products-grid">
+                    <!-- Products will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="pos-modal" style="display: none;">
+        <div class="pos-modal-content">
+            <div class="pos-payment-header">
+                <h2 data-translate="amount_due">Amount Due</h2>
+                <div class="pos-payment-amount" id="payment-total">0.00</div>
+            </div>
+            <div class="pos-payment-body">
+                <!-- Payment Methods -->
+                <div class="pos-payment-methods" id="payment-methods">
+                    <div class="pos-payment-method active" data-method="Cash">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        <span data-translate="cash">Cash</span>
+                    </div>
+                    <div class="pos-payment-method" data-method="Card">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <span data-translate="card">Card</span>
+                    </div>
+                    <div class="pos-payment-method" data-method="Bank Transfer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="22" x2="21" y2="22"/>
+                            <line x1="6" y1="18" x2="6" y2="11"/>
+                            <line x1="10" y1="18" x2="10" y2="11"/>
+                            <line x1="14" y1="18" x2="14" y2="11"/>
+                            <line x1="18" y1="18" x2="18" y2="11"/>
+                            <polygon points="12 2 20 7 4 7"/>
+                        </svg>
+                        <span data-translate="bank_transfer">Bank Transfer</span>
+                    </div>
+                </div>
+
+                <!-- Payment Input -->
+                <div class="pos-payment-input-wrapper">
+                    <input type="text" class="pos-payment-input" id="payment-input" value="0" readonly>
+                </div>
+
+                <!-- Numpad -->
+                <div class="pos-numpad">
+                    <button class="pos-numpad-btn" data-value="7">7</button>
+                    <button class="pos-numpad-btn" data-value="8">8</button>
+                    <button class="pos-numpad-btn" data-value="9">9</button>
+                    <button class="pos-numpad-btn" data-value="4">4</button>
+                    <button class="pos-numpad-btn" data-value="5">5</button>
+                    <button class="pos-numpad-btn" data-value="6">6</button>
+                    <button class="pos-numpad-btn" data-value="1">1</button>
+                    <button class="pos-numpad-btn" data-value="2">2</button>
+                    <button class="pos-numpad-btn" data-value="3">3</button>
+                    <button class="pos-numpad-btn clear" data-value="C">C</button>
+                    <button class="pos-numpad-btn" data-value="0">0</button>
+                    <button class="pos-numpad-btn" data-value=".">.</button>
+                </div>
+
+                <!-- Change Display -->
+                <div class="pos-payment-change" id="payment-change" style="display: none;">
+                    <div class="pos-payment-change-label" data-translate="change">Change</div>
+                    <div class="pos-payment-change-amount" id="change-amount">0.00</div>
+                </div>
+            </div>
+            <div class="pos-modal-footer">
+                <button class="btn btn-secondary" id="cancel-payment" data-translate="cancel">Cancel</button>
+                <button class="btn btn-primary btn-lg" id="complete-payment">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span data-translate="complete_payment">Complete Payment</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div id="customer-modal" class="pos-modal" style="display: none;">
+        <div class="pos-modal-content">
+            <div class="pos-modal-header">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span data-translate="select_customer">Select Customer</span>
+                </h2>
+            </div>
+            <div class="pos-customer-search">
+                <input type="text" class="form-control" id="customer-search" data-translate-placeholder="search_by_name_or_phone">
+            </div>
+            <div class="pos-customer-list" id="customer-list">
+                <!-- Customers will be rendered here -->
+            </div>
+            <div class="pos-modal-footer">
+                <button class="btn btn-secondary" id="cancel-customer" data-translate="cancel">Cancel</button>
+                <button class="btn btn-primary" id="new-customer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    <span data-translate="new_customer">New Customer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Close Session Modal -->
+    <div id="close-session-modal" class="pos-modal" style="display: none;">
+        <div class="pos-modal-content">
+            <div class="pos-modal-header">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--pos-danger);">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    <span data-translate="close_session">Close Session</span>
+                </h2>
+            </div>
+            <div class="pos-modal-body">
+                <div class="pos-session-summary">
+                    <div class="pos-session-summary-row">
+                        <span data-translate="opening_cash">Opening Cash</span>
+                        <span id="session-opening-cash">0.00</span>
+                    </div>
+                    <div class="pos-session-summary-row">
+                        <span data-translate="cash_sales">Cash Sales</span>
+                        <span id="session-cash-sales">0.00</span>
+                    </div>
+                    <div class="pos-session-summary-row">
+                        <span data-translate="card_sales">Card Sales</span>
+                        <span id="session-card-sales">0.00</span>
+                    </div>
+                    <div class="pos-session-summary-row highlight">
+                        <span data-translate="expected_cash">Expected Cash</span>
+                        <span id="session-expected-cash">0.00</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label data-translate="actual_cash_in_drawer">Actual Cash in Drawer</label>
+                    <input type="number" id="closing-cash" class="form-control" value="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label data-translate="closing_notes">Closing Notes</label>
+                    <textarea id="closing-notes" class="form-control" rows="2" data-translate-placeholder="add_notes"></textarea>
+                </div>
+            </div>
+            <div class="pos-modal-footer">
+                <button class="btn btn-secondary" id="cancel-close-session" data-translate="cancel">Cancel</button>
+                <button class="btn btn-danger" id="confirm-close-session">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    <span data-translate="close_session">Close Session</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

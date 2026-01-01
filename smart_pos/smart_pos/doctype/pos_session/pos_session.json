@@ -1,0 +1,289 @@
+{
+ "actions": [],
+ "autoname": "format:POS-SESSION-{####}",
+ "creation": "2026-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_session",
+  "pos_profile",
+  "company",
+  "user",
+  "column_break_session",
+  "opening_time",
+  "closing_time",
+  "status",
+  "section_cash",
+  "opening_cash",
+  "expected_cash",
+  "actual_cash",
+  "column_break_cash",
+  "cash_difference",
+  "total_sales",
+  "total_returns",
+  "section_transactions",
+  "total_invoices",
+  "total_items_sold",
+  "column_break_transactions",
+  "average_basket_size",
+  "average_basket_value",
+  "section_payments",
+  "payment_summary",
+  "section_device",
+  "device_id",
+  "device_name",
+  "column_break_device",
+  "ip_address",
+  "is_offline_session",
+  "section_notes",
+  "opening_notes",
+  "closing_notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_session",
+   "fieldtype": "Section Break",
+   "label": "Session Details"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_session",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "opening_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Opening Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "closing_time",
+   "fieldtype": "Datetime",
+   "label": "Closing Time"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nClosed\nCancelled"
+  },
+  {
+   "fieldname": "section_cash",
+   "fieldtype": "Section Break",
+   "label": "Cash Management"
+  },
+  {
+   "default": "0",
+   "fieldname": "opening_cash",
+   "fieldtype": "Currency",
+   "label": "Opening Cash"
+  },
+  {
+   "fieldname": "expected_cash",
+   "fieldtype": "Currency",
+   "label": "Expected Cash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actual_cash",
+   "fieldtype": "Currency",
+   "label": "Actual Cash (Counted)"
+  },
+  {
+   "fieldname": "column_break_cash",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cash_difference",
+   "fieldtype": "Currency",
+   "label": "Cash Difference",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_sales",
+   "fieldtype": "Currency",
+   "label": "Total Sales",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_returns",
+   "fieldtype": "Currency",
+   "label": "Total Returns",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_transactions",
+   "fieldtype": "Section Break",
+   "label": "Transaction Summary"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_invoices",
+   "fieldtype": "Int",
+   "label": "Total Invoices",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_items_sold",
+   "fieldtype": "Int",
+   "label": "Total Items Sold",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_transactions",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "average_basket_size",
+   "fieldtype": "Float",
+   "label": "Average Basket Size",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "average_basket_value",
+   "fieldtype": "Currency",
+   "label": "Average Basket Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_payments",
+   "fieldtype": "Section Break",
+   "label": "Payment Summary"
+  },
+  {
+   "fieldname": "payment_summary",
+   "fieldtype": "Table",
+   "label": "Payment Summary",
+   "options": "POS Session Payment",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_device",
+   "fieldtype": "Section Break",
+   "label": "Device Information"
+  },
+  {
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "label": "Device ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "label": "Device Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_device",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_offline_session",
+   "fieldtype": "Check",
+   "label": "Is Offline Session",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "opening_notes",
+   "fieldtype": "Small Text",
+   "label": "Opening Notes"
+  },
+  {
+   "fieldname": "closing_notes",
+   "fieldtype": "Small Text",
+   "label": "Closing Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "POS Invoice",
+   "link_fieldname": "pos_session"
+  }
+ ],
+ "modified": "2026-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Smart POS",
+ "name": "POS Session",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "POS User",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "title_field": "pos_profile",
+ "track_changes": 1
+}
