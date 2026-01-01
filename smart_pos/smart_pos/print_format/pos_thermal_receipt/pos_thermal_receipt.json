@@ -1,0 +1,11 @@
+{
+    "name": "POS Thermal Receipt",
+    "doctype": "Print Format",
+    "doc_type": "POS Invoice",
+    "module": "Smart POS",
+    "standard": "Yes",
+    "print_format_type": "Jinja",
+    "default_print_language": "ar",
+    "custom_format": 1,
+    "disabled": 0
+}

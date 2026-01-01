@@ -86,6 +86,10 @@ fixtures = [
     {
         "dt": "Workspace",
         "filters": [["module", "=", "Smart POS"]]
+    },
+    {
+        "dt": "Print Format",
+        "filters": [["module", "=", "Smart POS"]]
     }
 ]
 

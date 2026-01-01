@@ -11,6 +11,7 @@ def after_install():
     create_default_pos_profile()
     create_default_settings()
     setup_custom_fields()
+    create_print_formats()
     print("Smart POS installed successfully!")
 
 
@@ -136,3 +137,41 @@ def setup_custom_fields():
                     print(f"Created custom field: {field_name}")
                 except Exception as e:
                     print(f"Could not create custom field {field_name}: {e}")
+
+
+def create_print_formats():
+    """Create POS Thermal Receipt print format"""
+    import os
+    
+    if frappe.db.exists("Print Format", "POS Thermal Receipt"):
+        print("POS Thermal Receipt print format already exists")
+        return
+    
+    # Read the HTML template
+    app_path = frappe.get_app_path("smart_pos")
+    template_path = os.path.join(
+        app_path, "smart_pos", "print_format", "pos_thermal_receipt", "pos_thermal_receipt.html"
+    )
+    
+    html_content = ""
+    if os.path.exists(template_path):
+        with open(template_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+    
+    # Create print format
+    print_format = frappe.new_doc("Print Format")
+    print_format.name = "POS Thermal Receipt"
+    print_format.doc_type = "POS Invoice"
+    print_format.module = "Smart POS"
+    print_format.standard = "No"
+    print_format.custom_format = 1
+    print_format.print_format_type = "Jinja"
+    print_format.html = html_content
+    print_format.default_print_language = "ar"
+    print_format.disabled = 0
+    
+    try:
+        print_format.insert(ignore_permissions=True)
+        print("Created POS Thermal Receipt print format")
+    except Exception as e:
+        print(f"Could not create print format: {e}")

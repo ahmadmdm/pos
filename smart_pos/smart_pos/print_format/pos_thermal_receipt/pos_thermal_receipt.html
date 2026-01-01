@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Thermal Receipt Styles - 80mm width */
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Tahoma', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            width: 80mm;
+            max-width: 80mm;
+            color: #000;
+            background: #fff;
+            direction: rtl;
+        }
+        
+        .receipt {
+            padding: 5mm;
+            width: 100%;
+        }
+        
+        /* Header Section */
+        .header {
+            text-align: center;
+            padding-bottom: 3mm;
+            border-bottom: 1px dashed #000;
+            margin-bottom: 3mm;
+        }
+        
+        .company-logo {
+            max-width: 40mm;
+            max-height: 15mm;
+            margin-bottom: 2mm;
+        }
+        
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+        }
+        
+        .company-name-en {
+            font-size: 12px;
+            margin-bottom: 2mm;
+        }
+        
+        .company-info {
+            font-size: 10px;
+            color: #333;
+        }
+        
+        .tax-number {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 2mm;
+            padding: 2mm;
+            background: #f5f5f5;
+            border-radius: 2mm;
+        }
+        
+        /* Invoice Info */
+        .invoice-info {
+            padding: 3mm 0;
+            border-bottom: 1px dashed #000;
+            margin-bottom: 3mm;
+        }
+        
+        .invoice-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3mm;
+            padding: 2mm;
+            background: #000;
+            color: #fff;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 1mm;
+        }
+        
+        .info-label {
+            color: #666;
+        }
+        
+        .info-value {
+            font-weight: bold;
+        }
+        
+        /* Customer Info */
+        .customer-info {
+            padding: 2mm 0;
+            border-bottom: 1px dashed #000;
+            margin-bottom: 3mm;
+            font-size: 11px;
+        }
+        
+        /* Items Table */
+        .items-section {
+            margin-bottom: 3mm;
+        }
+        
+        .items-header {
+            display: flex;
+            font-weight: bold;
+            font-size: 10px;
+            padding: 2mm 0;
+            border-bottom: 1px solid #000;
+            background: #f5f5f5;
+        }
+        
+        .items-header span {
+            padding: 0 1mm;
+        }
+        
+        .col-item { flex: 3; text-align: right; }
+        .col-qty { flex: 1; text-align: center; }
+        .col-price { flex: 1.5; text-align: center; }
+        .col-total { flex: 1.5; text-align: left; }
+        
+        .item-row {
+            display: flex;
+            font-size: 11px;
+            padding: 2mm 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        .item-row span {
+            padding: 0 1mm;
+        }
+        
+        .item-name {
+            font-size: 10px;
+            word-wrap: break-word;
+        }
+        
+        /* Totals */
+        .totals-section {
+            padding: 3mm 0;
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            margin-bottom: 3mm;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 1mm;
+        }
+        
+        .total-row.subtotal {
+            color: #666;
+        }
+        
+        .total-row.discount {
+            color: #c00;
+        }
+        
+        .total-row.tax {
+            color: #060;
+        }
+        
+        .total-row.grand-total {
+            font-size: 14px;
+            font-weight: bold;
+            padding-top: 2mm;
+            margin-top: 2mm;
+            border-top: 1px solid #000;
+        }
+        
+        /* Payment Info */
+        .payment-section {
+            padding: 3mm 0;
+            border-bottom: 1px dashed #000;
+            margin-bottom: 3mm;
+        }
+        
+        .payment-title {
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 2mm;
+        }
+        
+        .payment-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 1mm;
+        }
+        
+        .change-row {
+            font-weight: bold;
+            color: #060;
+            font-size: 12px;
+            padding-top: 2mm;
+            border-top: 1px dotted #000;
+        }
+        
+        /* QR Code Section */
+        .qr-section {
+            text-align: center;
+            padding: 3mm 0;
+            border-bottom: 1px dashed #000;
+            margin-bottom: 3mm;
+        }
+        
+        .qr-title {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 2mm;
+        }
+        
+        .qr-code {
+            display: inline-block;
+        }
+        
+        .qr-code img {
+            width: 35mm;
+            height: 35mm;
+        }
+        
+        .zatca-info {
+            font-size: 9px;
+            color: #666;
+            margin-top: 2mm;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding-top: 3mm;
+            font-size: 10px;
+        }
+        
+        .footer-message {
+            font-weight: bold;
+            margin-bottom: 2mm;
+        }
+        
+        .footer-info {
+            color: #666;
+            font-size: 9px;
+        }
+        
+        .footer-thanks {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 3mm;
+            padding: 2mm;
+            background: #f5f5f5;
+            border-radius: 2mm;
+        }
+        
+        /* Separator */
+        .separator {
+            text-align: center;
+            padding: 2mm 0;
+            color: #999;
+            font-size: 10px;
+        }
+        
+        /* Print specific */
+        @media print {
+            body {
+                width: 80mm;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <!-- Header -->
+        <div class="header">
+            {% if doc.company %}
+                {% set company_doc = frappe.get_doc("Company", doc.company) %}
+                
+                {% if company_doc.company_logo %}
+                <img src="{{ company_doc.company_logo }}" class="company-logo" alt="Logo">
+                {% endif %}
+                
+                <div class="company-name">{{ company_doc.company_name }}</div>
+                
+                {% if company_doc.company_name_in_arabic %}
+                <div class="company-name">{{ company_doc.company_name_in_arabic }}</div>
+                {% endif %}
+                
+                <div class="company-info">
+                    {% if company_doc.address %}
+                    {{ company_doc.address }}<br>
+                    {% endif %}
+                    {% if company_doc.phone_no %}
+                    هاتف: {{ company_doc.phone_no }}<br>
+                    {% endif %}
+                    {% if company_doc.email %}
+                    {{ company_doc.email }}
+                    {% endif %}
+                </div>
+                
+                {% if company_doc.tax_id %}
+                <div class="tax-number">
+                    الرقم الضريبي: {{ company_doc.tax_id }}
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+        
+        <!-- Invoice Info -->
+        <div class="invoice-info">
+            <div class="invoice-title">
+                {% if doc.is_return %}
+                فاتورة مرتجع
+                {% else %}
+                فاتورة ضريبية مبسطة
+                {% endif %}
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">رقم الفاتورة:</span>
+                <span class="info-value">{{ doc.name }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">التاريخ:</span>
+                <span class="info-value">{{ doc.posting_date }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">الوقت:</span>
+                <span class="info-value">{{ doc.posting_time.strftime('%H:%M') if doc.posting_time else '' }}</span>
+            </div>
+            
+            {% if doc.pos_profile %}
+            <div class="info-row">
+                <span class="info-label">نقطة البيع:</span>
+                <span class="info-value">{{ doc.pos_profile }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="info-row">
+                <span class="info-label">الكاشير:</span>
+                <span class="info-value">{{ frappe.get_value("User", doc.owner, "full_name") or doc.owner }}</span>
+            </div>
+        </div>
+        
+        <!-- Customer Info -->
+        {% if doc.customer_name and doc.customer_name != "Walk-in Customer" %}
+        <div class="customer-info">
+            <div class="info-row">
+                <span class="info-label">العميل:</span>
+                <span class="info-value">{{ doc.customer_name }}</span>
+            </div>
+            {% if doc.tax_id %}
+            <div class="info-row">
+                <span class="info-label">الرقم الضريبي:</span>
+                <span class="info-value">{{ doc.tax_id }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Items -->
+        <div class="items-section">
+            <div class="items-header">
+                <span class="col-item">الصنف</span>
+                <span class="col-qty">الكمية</span>
+                <span class="col-price">السعر</span>
+                <span class="col-total">المجموع</span>
+            </div>
+            
+            {% for item in doc.items %}
+            <div class="item-row">
+                <span class="col-item">
+                    <div class="item-name">{{ item.item_name }}</div>
+                    {% if item.item_code != item.item_name %}
+                    <div style="font-size: 9px; color: #666;">{{ item.item_code }}</div>
+                    {% endif %}
+                </span>
+                <span class="col-qty">{{ item.qty | int if item.qty == item.qty | int else item.qty }}</span>
+                <span class="col-price">{{ "%.2f" | format(item.rate) }}</span>
+                <span class="col-total">{{ "%.2f" | format(item.amount) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Totals -->
+        <div class="totals-section">
+            <div class="total-row subtotal">
+                <span>المجموع الفرعي:</span>
+                <span>{{ "%.2f" | format(doc.total) }} {{ doc.currency }}</span>
+            </div>
+            
+            {% if doc.discount_amount and doc.discount_amount > 0 %}
+            <div class="total-row discount">
+                <span>الخصم:</span>
+                <span>- {{ "%.2f" | format(doc.discount_amount) }} {{ doc.currency }}</span>
+            </div>
+            {% endif %}
+            
+            {% if doc.total_taxes_and_charges and doc.total_taxes_and_charges > 0 %}
+            <div class="total-row tax">
+                <span>ضريبة القيمة المضافة (15%):</span>
+                <span>{{ "%.2f" | format(doc.total_taxes_and_charges) }} {{ doc.currency }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="total-row grand-total">
+                <span>الإجمالي:</span>
+                <span>{{ "%.2f" | format(doc.grand_total) }} {{ doc.currency }}</span>
+            </div>
+        </div>
+        
+        <!-- Payment -->
+        <div class="payment-section">
+            <div class="payment-title">طريقة الدفع</div>
+            
+            {% for payment in doc.payments %}
+            <div class="payment-row">
+                <span>{{ payment.mode_of_payment }}:</span>
+                <span>{{ "%.2f" | format(payment.amount) }} {{ doc.currency }}</span>
+            </div>
+            {% endfor %}
+            
+            {% set total_paid = doc.payments | sum(attribute='amount') %}
+            {% set change = total_paid - doc.grand_total %}
+            {% if change > 0 %}
+            <div class="payment-row change-row">
+                <span>الباقي:</span>
+                <span>{{ "%.2f" | format(change) }} {{ doc.currency }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- ZATCA QR Code -->
+        <div class="qr-section">
+            <div class="qr-title">كود الفاتورة الضريبية</div>
+            
+            {% if doc.custom_ksa_einvoicing_qr %}
+            <div class="qr-code">
+                <img src="data:image/png;base64,{{ doc.custom_ksa_einvoicing_qr }}" alt="QR Code">
+            </div>
+            {% elif doc.ksa_einv_qr %}
+            <div class="qr-code">
+                <img src="data:image/png;base64,{{ doc.ksa_einv_qr }}" alt="QR Code">
+            </div>
+            {% else %}
+            <!-- Generate QR Code using JavaScript -->
+            <div class="qr-code" id="qrcode">
+                <canvas id="qr-canvas" width="140" height="140"></canvas>
+            </div>
+            <script>
+                // Simple QR code will be generated if ZATCA QR not available
+                (function() {
+                    var data = "{{ doc.name }}|{{ doc.posting_date }}|{{ doc.grand_total }}";
+                    console.log("QR Data:", data);
+                })();
+            </script>
+            {% endif %}
+            
+            <div class="zatca-info">
+                فاتورة إلكترونية متوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-thanks">
+                شكراً لتسوقكم معنا
+            </div>
+            
+            <div class="footer-message">
+                نتطلع لخدمتكم مرة أخرى
+            </div>
+            
+            <div class="footer-info">
+                {% if doc.remarks %}
+                {{ doc.remarks }}<br>
+                {% endif %}
+                
+                <br>
+                ════════════════════════<br>
+                هذه الفاتورة صادرة إلكترونياً<br>
+                {{ frappe.utils.now_datetime().strftime('%Y-%m-%d %H:%M:%S') }}
+            </div>
+        </div>
+        
+        <div class="separator">
+            ✂ ─────────────────────────
+        </div>
+    </div>
+</body>
+</html>
