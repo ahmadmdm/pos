@@ -1642,21 +1642,54 @@ class POSTerminal {
     }
     
     playSound(type) {
-        // Optional: Add sound effects
-        const sounds = {
-            add: '/assets/smart_pos/sounds/beep.mp3',
-            success: '/assets/smart_pos/sounds/success.mp3',
-            error: '/assets/smart_pos/sounds/error.mp3'
-        };
-        
-        if (sounds[type]) {
-            try {
-                const audio = new Audio(sounds[type]);
-                audio.volume = 0.3;
-                audio.play().catch(() => {});  // Ignore audio errors silently
-            } catch (e) {
-                // Ignore audio errors
+        // Use Web Audio API for sound effects (no external files needed)
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Different sounds for different actions
+            switch(type) {
+                case 'add':
+                case 'beep':
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'sine';
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                case 'success':
+                    oscillator.frequency.value = 600;
+                    oscillator.type = 'sine';
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
+                    setTimeout(() => {
+                        oscillator.frequency.value = 800;
+                    }, 100);
+                    setTimeout(() => {
+                        oscillator.frequency.value = 1000;
+                    }, 200);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    break;
+                case 'error':
+                    oscillator.frequency.value = 300;
+                    oscillator.type = 'square';
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    break;
+                default:
+                    oscillator.frequency.value = 500;
+                    oscillator.type = 'sine';
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
             }
+        } catch (e) {
+            // Ignore audio errors silently
         }
     }
 }
