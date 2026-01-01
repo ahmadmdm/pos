@@ -570,7 +570,21 @@ def create_pos_invoice(invoice_data) -> Dict:
     
     # Set basic fields
     invoice.company = invoice_data.get("company")
-    invoice.customer = invoice_data.get("customer")
+    
+    # Get customer - use from invoice data, or from POS Profile, or from settings
+    customer = invoice_data.get("customer")
+    if not customer and invoice_data.get("pos_profile"):
+        customer = frappe.db.get_value("POS Profile", invoice_data.get("pos_profile"), "customer")
+    if not customer:
+        try:
+            settings = frappe.get_single("Smart POS Settings")
+            customer = settings.default_customer
+        except Exception:
+            pass
+    if not customer:
+        frappe.throw(_("Please select a customer or set a default customer in POS Profile or Smart POS Settings"))
+    
+    invoice.customer = customer
     invoice.pos_profile = invoice_data.get("pos_profile")
     invoice.posting_date = invoice_data.get("posting_date") or nowdate()
     invoice.posting_time = invoice_data.get("posting_time")

@@ -85,7 +85,8 @@ const POS_TRANSLATIONS = {
         print_receipt: "Print Receipt",
         new_sale: "New Sale",
         print_sent: "Print sent successfully",
-        print_error: "Print error"
+        print_error: "Print error",
+        please_select_customer: "Please select a customer first"
     },
     ar: {
         // Loading
@@ -167,7 +168,8 @@ const POS_TRANSLATIONS = {
         print_receipt: "طباعة الفاتورة",
         new_sale: "عملية جديدة",
         print_sent: "تم إرسال الطباعة بنجاح",
-        print_error: "خطأ في الطباعة"
+        print_error: "خطأ في الطباعة",
+        please_select_customer: "الرجاء اختيار عميل أولاً"
     }
 };
 
@@ -1053,12 +1055,26 @@ class POSTerminal {
             return;
         }
         
+        // Get customer - from state, profile, or settings
+        const customer = this.state.customer?.name || 
+                        this.state.profile?.customer || 
+                        this.state.settings?.default_customer;
+        
+        if (!customer) {
+            frappe.msgprint({
+                title: this.__('error'),
+                indicator: 'red',
+                message: this.__('please_select_customer') || 'Please select a customer'
+            });
+            return;
+        }
+        
         this.showLoading(this.__('loading_pos'));
         
         try {
             const invoiceData = {
                 company: this.state.profile.company,
-                customer: this.state.customer?.name || this.state.profile.customer,
+                customer: customer,
                 pos_profile: this.state.profile.name,
                 pos_session: this.state.session.session_id,
                 warehouse: this.state.profile.warehouse,
