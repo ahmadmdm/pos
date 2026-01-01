@@ -3,7 +3,7 @@
 # License: MIT
 
 app_name = "smart_pos"
-app_title = "Smart POS"
+app_title = "AhmadPos"
 app_publisher = "Ahmad"
 app_description = "Enterprise-grade Offline-First Point of Sale System for Frappe/ERPNext"
 app_email = "ahmad@example.com"
@@ -18,7 +18,7 @@ add_to_apps_screen = [
     {
         "name": "smart_pos",
         "logo": "/assets/smart_pos/images/pos_logo.png",
-        "title": "Smart POS",
+        "title": "AhmadPos",
         "route": "/app/pos-terminal",
         "has_permission": "smart_pos.smart_pos.api.pos_api.has_pos_permission"
     }
