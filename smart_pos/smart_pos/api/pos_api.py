@@ -971,3 +971,95 @@ def cleanup_old_sessions():
             frappe.logger().info(f"Auto-closed old POS Session: {session.name}")
         except Exception as e:
             frappe.logger().error(f"Error closing POS Session {session.name}: {e}")
+
+
+# =============================================================================
+# Printer Support
+# =============================================================================
+
+@frappe.whitelist()
+def check_printer(printer_ip: str, printer_port: int = 9100):
+    """Check if a network printer is reachable"""
+    import socket
+    
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(3)
+        result = sock.connect_ex((printer_ip, int(printer_port)))
+        sock.close()
+        
+        return {
+            "connected": result == 0,
+            "ip": printer_ip,
+            "port": printer_port
+        }
+    except Exception as e:
+        return {
+            "connected": False,
+            "error": str(e)
+        }
+
+
+@frappe.whitelist()
+def send_to_printer(printer_ip: str, printer_port: int = 9100, data: str = None):
+    """Send raw data to network printer"""
+    import socket
+    import base64
+    
+    if not data:
+        return {"success": False, "error": "No data provided"}
+    
+    try:
+        # Decode base64 data
+        raw_data = base64.b64decode(data)
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect((printer_ip, int(printer_port)))
+        sock.sendall(raw_data)
+        sock.close()
+        
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def get_print_receipt_data(invoice_name: str):
+    """Get formatted receipt data for an invoice"""
+    invoice = frappe.get_doc("POS Invoice", invoice_name)
+    company = frappe.get_doc("Company", invoice.company)
+    
+    # Get payment details
+    payments = []
+    for payment in invoice.payments:
+        payments.append({
+            "mode_of_payment": payment.mode_of_payment,
+            "amount": payment.amount
+        })
+    
+    return {
+        "company_name": company.company_name,
+        "company_address": company.address or "",
+        "company_phone": company.phone_no or "",
+        "company_tax_id": company.tax_id or "",
+        "invoice_name": invoice.name,
+        "posting_date": str(invoice.posting_date),
+        "posting_time": str(invoice.posting_time) if invoice.posting_time else "",
+        "cashier": frappe.db.get_value("User", invoice.owner, "full_name") or invoice.owner,
+        "customer_name": invoice.customer_name,
+        "items": [{
+            "item_name": item.item_name,
+            "qty": item.qty,
+            "rate": item.rate,
+            "amount": item.amount,
+            "discount_amount": item.discount_amount or 0
+        } for item in invoice.items],
+        "subtotal": invoice.total,
+        "discount": invoice.discount_amount or 0,
+        "tax": invoice.total_taxes_and_charges or 0,
+        "total": invoice.grand_total,
+        "payments": payments,
+        "qr_code": getattr(invoice, 'custom_ksa_einvoicing_qr', None)
+    }
+

@@ -258,6 +258,9 @@ class POSTerminal {
                 barcodeDelay: 50
             });
             
+            // Initialize new modules
+            this.initializeModules();
+            
             // Setup event listeners
             this.setupSyncListeners();
             this.setupHardwareListeners();
@@ -314,6 +317,41 @@ class POSTerminal {
         // Listen for online/offline events
         window.addEventListener('online', () => this.updateOnlineStatus(true));
         window.addEventListener('offline', () => this.updateOnlineStatus(false));
+    }
+    
+    // Initialize additional modules
+    initializeModules() {
+        // Hold/Recall Manager
+        if (window.HoldRecallManager) {
+            this.holdRecallManager = new HoldRecallManager(this);
+        }
+        
+        // Keyboard Shortcuts Manager
+        if (window.KeyboardShortcutsManager) {
+            this.shortcutsManager = new KeyboardShortcutsManager(this);
+        }
+        
+        // Quick Keys Manager
+        if (window.QuickKeysManager) {
+            this.quickKeysManager = new QuickKeysManager(this);
+            this.quickKeysManager.setupContextMenu();
+            if (this.shortcutsManager) {
+                this.quickKeysManager.setupKeyboardShortcuts(this.shortcutsManager);
+            }
+        }
+        
+        // Discount Manager
+        if (window.DiscountManager) {
+            this.discountManager = new DiscountManager(this);
+        }
+        
+        // Thermal Printer
+        if (window.ThermalPrinter) {
+            this.printer = new ThermalPrinter(this.state.settings || {});
+            this.receiptBuilder = new ReceiptBuilder(this);
+        }
+        
+        console.log('Smart POS modules initialized');
     }
     
     updateOnlineStatus(isOnline) {

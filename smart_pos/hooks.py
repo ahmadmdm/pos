@@ -33,6 +33,11 @@ app_include_js = [
     "/assets/smart_pos/js/pos_database.js",
     "/assets/smart_pos/js/pos_sync.js",
     "/assets/smart_pos/js/pos_hardware.js",
+    "/assets/smart_pos/js/pos_performance.js",
+    "/assets/smart_pos/js/pos_hold_recall.js",
+    "/assets/smart_pos/js/pos_shortcuts.js",
+    "/assets/smart_pos/js/pos_discount.js",
+    "/assets/smart_pos/js/pos_printer.js",
     "/assets/smart_pos/js/smart_pos.bundle.js"
 ]
 

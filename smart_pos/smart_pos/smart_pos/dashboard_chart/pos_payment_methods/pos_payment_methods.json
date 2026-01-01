@@ -1,0 +1,13 @@
+{
+ "name": "POS Payment Methods",
+ "chart_name": "POS Payment Methods",
+ "chart_type": "Group By",
+ "document_type": "Sales Invoice Payment",
+ "group_by_type": "Sum",
+ "group_by_based_on": "mode_of_payment",
+ "aggregate_function_based_on": "amount",
+ "number_of_groups": 0,
+ "filters_json": "[]",
+ "type": "Donut",
+ "color": "#10b981"
+}
