@@ -655,7 +655,6 @@ select.form-control {
 .pos-product-card.out-of-stock,
 .product-card.out-of-stock {
     opacity: 0.6;
-    pointer-events: none;
 }
 
 .product-image,

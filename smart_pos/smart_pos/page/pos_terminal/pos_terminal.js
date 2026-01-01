@@ -501,21 +501,16 @@ class POSTerminal {
     
     async loadItems(forceRefresh = false) {
         try {
-            // Try to get from IndexedDB first
-            let items = await window.POSDatabase.getAllItems();
+            // Always fetch from server for now to ensure fresh data
+            const response = await frappe.call({
+                method: 'smart_pos.smart_pos.api.pos_api.get_all_items_for_offline',
+                args: { pos_profile: this.state.profile.name }
+            });
             
-            if (items.length === 0 || forceRefresh) {
-                // Fetch from server
-                const response = await frappe.call({
-                    method: 'smart_pos.smart_pos.api.pos_api.get_all_items_for_offline',
-                    args: { pos_profile: this.state.profile.name }
-                });
-                
-                items = response.message || [];
-                
-                // Save to IndexedDB
-                await window.POSDatabase.saveItems(items);
-            }
+            let items = response.message || [];
+            
+            // Save to IndexedDB
+            await window.POSDatabase.saveItems(items);
             
             this.state.items = items;
             
@@ -655,13 +650,19 @@ class POSTerminal {
     // =============================================================================
     
     addToCart(itemCode, qty = 1) {
-        const item = this.state.items.find(i => i.item_code === itemCode);
-        if (!item) return;
+        // Convert to string for comparison
+        itemCode = String(itemCode);
         
-        // Check stock
-        if (item.stock_qty <= 0 && this.state.settings.show_stock_qty) {
-            frappe.show_alert({ message: this.__('out_of_stock'), indicator: 'red' });
+        const item = this.state.items.find(i => String(i.item_code) === itemCode || String(i.name) === itemCode);
+        
+        if (!item) {
+            console.error('Item not found:', itemCode);
             return;
+        }
+        
+        // Show warning if out of stock but still allow adding
+        if (item.stock_qty <= 0 && this.state.settings.show_stock_qty) {
+            frappe.show_alert({ message: this.__('out_of_stock') + ' - ' + item.item_name, indicator: 'orange' });
         }
         
         // Check if already in cart
@@ -787,11 +788,11 @@ class POSTerminal {
         
         const total = subtotal + tax;
         
-        $('#cart-subtotal').text(this.formatCurrency(subtotal));
-        $('#cart-tax').text(this.formatCurrency(tax));
-        $('#cart-discount').text('-' + this.formatCurrency(discount));
-        $('#cart-total').text(this.formatCurrency(total));
-        $('#pay-amount').text(this.formatCurrency(total));
+        $('#cart-subtotal').html(this.formatCurrency(subtotal));
+        $('#cart-tax').html(this.formatCurrency(tax));
+        $('#cart-discount').html('-' + this.formatCurrency(discount));
+        $('#cart-total').html(this.formatCurrency(total));
+        $('#pay-amount').html(this.formatCurrency(total));
         
         // Toggle tax/discount rows
         $('#tax-row').toggle(tax > 0);
@@ -878,7 +879,10 @@ class POSTerminal {
     showPaymentModal() {
         if (this.state.cart.length === 0) return;
         
-        const total = parseFloat($('#cart-total').text().replace(/[^0-9.-]/g, '')) || 0;
+        // Calculate total from cart state instead of DOM
+        const subtotal = this.state.cart.reduce((sum, item) => sum + item.amount, 0);
+        const tax = 0; // TODO: Apply tax
+        const total = subtotal + tax;
         
         this.state.payments = [];
         this.state.paymentTotal = total;
@@ -886,7 +890,7 @@ class POSTerminal {
         this.state.paymentInput = '';
         
         // Update display
-        $('#payment-total').text(this.formatCurrency(total));
+        $('#payment-total').html(this.formatCurrency(total));
         $('#payment-input').val('0');
         $('#payment-change').hide();
         $('#complete-payment').prop('disabled', true);
@@ -938,7 +942,7 @@ class POSTerminal {
         
         if (change >= 0) {
             $('#payment-change').show();
-            $('#change-amount').text(this.formatCurrency(change));
+            $('#change-amount').html(this.formatCurrency(change));
         } else {
             $('#payment-change').hide();
         }
@@ -983,9 +987,9 @@ class POSTerminal {
         const remaining = Math.max(0, total - paid);
         const change = Math.max(0, paid - total);
         
-        $('#payment-paid').text(this.formatCurrency(paid));
-        $('#payment-remaining').text(this.formatCurrency(remaining));
-        $('#payment-change').text(this.formatCurrency(change));
+        $('#payment-paid').html(this.formatCurrency(paid));
+        $('#payment-remaining').html(this.formatCurrency(remaining));
+        $('#payment-change').html(this.formatCurrency(change));
         
         $('#remaining-row').toggle(remaining > 0);
         $('#change-row').toggle(change > 0);
@@ -1098,7 +1102,8 @@ class POSTerminal {
     // =============================================================================
     
     async showCloseSessionModal() {
-        if (!this.state.session || !this.state.session.session_id) {
+        const sessionId = this.state.session?.session_id || this.state.session?.name;
+        if (!this.state.session || !sessionId) {
             frappe.msgprint(this.__('no_active_session'));
             return;
         }
@@ -1106,17 +1111,17 @@ class POSTerminal {
         try {
             const response = await frappe.call({
                 method: 'smart_pos.smart_pos.api.pos_api.get_session_summary',
-                args: { session_id: this.state.session.session_id }
+                args: { session_id: sessionId }
             });
             
             const summary = response.message?.session || {};
             
-            $('#session-opening-cash').text(this.formatCurrency(summary.opening_cash || 0));
-            $('#session-cash-sales').text(this.formatCurrency(summary.total_sales || 0));
-            $('#session-card-sales').text(this.formatCurrency(summary.total_returns || 0));
+            $('#session-opening-cash').html(this.formatCurrency(summary.opening_cash || 0));
+            $('#session-cash-sales').html(this.formatCurrency(summary.total_sales || 0));
+            $('#session-card-sales').html(this.formatCurrency(summary.total_returns || 0));
             
             const expectedCash = (summary.opening_cash || 0) + (summary.total_sales || 0) - (summary.total_returns || 0);
-            $('#session-expected-cash').text(this.formatCurrency(expectedCash));
+            $('#session-expected-cash').html(this.formatCurrency(expectedCash));
             
             this.state.expectedCash = expectedCash;
             
@@ -1139,10 +1144,11 @@ class POSTerminal {
             await window.POSSyncEngine.syncAll();
             
             // Close session
+            const sessionId = this.state.session?.session_id || this.state.session?.name;
             const response = await frappe.call({
                 method: 'smart_pos.smart_pos.api.pos_api.close_session',
                 args: {
-                    session_id: this.state.session.session_id,
+                    session_id: sessionId,
                     actual_cash: actualCash,
                     notes: notes
                 }
@@ -1224,7 +1230,7 @@ class POSTerminal {
         
         // Product click
         $(document).on('click', '.pos-product-card', function() {
-            const itemCode = $(this).data('item-code');
+            const itemCode = String($(this).data('item-code'));
             self.addToCart(itemCode);
         });
         
@@ -1511,7 +1517,7 @@ class POSTerminal {
             try {
                 const audio = new Audio(sounds[type]);
                 audio.volume = 0.3;
-                audio.play();
+                audio.play().catch(() => {});  // Ignore audio errors silently
             } catch (e) {
                 // Ignore audio errors
             }

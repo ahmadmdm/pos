@@ -257,12 +257,12 @@ def get_session_summary(session_id: str) -> Dict:
     # Get payment breakdown
     payments = frappe.db.sql("""
         SELECT 
-            pip.mode_of_payment,
-            SUM(pip.amount) as total_amount
-        FROM `tabPOS Invoice Payment` pip
-        JOIN `tabPOS Invoice` pi ON pi.name = pip.parent
+            sip.mode_of_payment,
+            SUM(sip.amount) as total_amount
+        FROM `tabSales Invoice Payment` sip
+        JOIN `tabPOS Invoice` pi ON pi.name = sip.parent
         WHERE pi.pos_session = %s AND pi.docstatus = 1
-        GROUP BY pip.mode_of_payment
+        GROUP BY sip.mode_of_payment
     """, session_id, as_dict=True)
     
     return {
@@ -553,7 +553,7 @@ def get_all_customers_for_offline() -> List[Dict]:
 # =============================================================================
 
 @frappe.whitelist()
-def create_pos_invoice(invoice_data: Dict) -> Dict:
+def create_pos_invoice(invoice_data) -> Dict:
     """Create POS Invoice"""
     if isinstance(invoice_data, str):
         invoice_data = json.loads(invoice_data)

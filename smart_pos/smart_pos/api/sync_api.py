@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Any
 # =============================================================================
 
 @frappe.whitelist()
-def sync_offline_data(data: Dict) -> Dict:
+def sync_offline_data(data) -> Dict:
     """
     Main sync endpoint for offline data
     Handles invoices, customers, and other documents created offline

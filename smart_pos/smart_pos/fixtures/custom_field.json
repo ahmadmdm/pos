@@ -1,0 +1,43 @@
+[
+  {
+    "name": "POS Invoice-pos_session",
+    "dt": "POS Invoice",
+    "fieldname": "pos_session",
+    "fieldtype": "Link",
+    "label": "POS Session",
+    "options": "POS Session",
+    "insert_after": "pos_profile",
+    "module": "Smart POS",
+    "owner": "Administrator",
+    "in_list_view": 0,
+    "in_standard_filter": 1,
+    "read_only": 0,
+    "allow_on_submit": 0
+  },
+  {
+    "name": "POS Invoice-is_offline",
+    "dt": "POS Invoice",
+    "fieldname": "is_offline",
+    "fieldtype": "Check",
+    "label": "Created Offline",
+    "insert_after": "pos_session",
+    "module": "Smart POS",
+    "owner": "Administrator",
+    "default": "0",
+    "read_only": 1,
+    "allow_on_submit": 0
+  },
+  {
+    "name": "POS Invoice-offline_invoice_id",
+    "dt": "POS Invoice",
+    "fieldname": "offline_invoice_id",
+    "fieldtype": "Data",
+    "label": "Offline Invoice ID",
+    "insert_after": "is_offline",
+    "module": "Smart POS",
+    "owner": "Administrator",
+    "read_only": 1,
+    "hidden": 1,
+    "allow_on_submit": 0
+  }
+]
