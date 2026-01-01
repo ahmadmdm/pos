@@ -345,7 +345,7 @@
             
             <div class="info-row">
                 <span class="info-label">الوقت:</span>
-                <span class="info-value">{{ doc.posting_time.strftime('%H:%M') if doc.posting_time else '' }}</span>
+                <span class="info-value">{{ (doc.posting_time | string).split('.')[0] if doc.posting_time else '' }}</span>
             </div>
             
             {% if doc.pos_profile %}
