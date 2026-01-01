@@ -122,6 +122,7 @@ def get_smart_pos_settings() -> Dict:
             "barcode_scan_delay": settings.barcode_scan_delay or 50,
             "enable_cash_drawer": settings.enable_cash_drawer,
             "enable_auto_print": settings.enable_auto_print,
+            "enable_thermal_print": getattr(settings, 'enable_thermal_print', False),
             "default_print_format": settings.default_print_format,
             "printer_type": settings.printer_type,
             "printer_ip": settings.printer_ip,

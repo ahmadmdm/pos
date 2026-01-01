@@ -81,7 +81,11 @@ const POS_TRANSLATIONS = {
         select_pos_profile: "Please select a POS Profile",
         no_active_session: "No active session",
         product_not_found: "Product not found",
-        out_of_stock: "Out of stock"
+        out_of_stock: "Out of stock",
+        print_receipt: "Print Receipt",
+        new_sale: "New Sale",
+        print_sent: "Print sent successfully",
+        print_error: "Print error"
     },
     ar: {
         // Loading
@@ -159,7 +163,11 @@ const POS_TRANSLATIONS = {
         select_pos_profile: "الرجاء اختيار ملف نقطة البيع",
         no_active_session: "لا توجد جلسة نشطة",
         product_not_found: "المنتج غير موجود",
-        out_of_stock: "نفذت الكمية"
+        out_of_stock: "نفذت الكمية",
+        print_receipt: "طباعة الفاتورة",
+        new_sale: "عملية جديدة",
+        print_sent: "تم إرسال الطباعة بنجاح",
+        print_error: "خطأ في الطباعة"
     }
 };
 
@@ -1090,6 +1098,13 @@ class POSTerminal {
             const change = paid - total;
             this.showSuccessMessage(response.message.name, change);
             
+            // Auto print if enabled
+            if (this.state.settings?.enable_auto_print) {
+                setTimeout(() => {
+                    this.printInvoice(response.message.name);
+                }, 500);
+            }
+            
             // Clear cart
             this.clearCart();
             
@@ -1109,6 +1124,10 @@ class POSTerminal {
     }
     
     showSuccessMessage(invoiceName, change) {
+        // Store last invoice for printing
+        this.lastInvoiceName = invoiceName;
+        this.lastInvoiceChange = change;
+        
         let message = `<div style="text-align: center; padding: 20px;">
             <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin-bottom: 16px;">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -1124,15 +1143,94 @@ class POSTerminal {
             </div>`;
         }
         
+        // Add print buttons
+        message += `
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="btn btn-primary btn-print-invoice" data-invoice="${invoiceName}" style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    ${this.__('print_receipt')}
+                </button>
+                <button class="btn btn-secondary btn-new-sale" style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    ${this.__('new_sale')}
+                </button>
+            </div>
+        `;
+        
         message += '</div>';
         
-        frappe.msgprint({
+        const dialog = frappe.msgprint({
             title: this.__('success'),
             indicator: 'green',
             message: message
         });
         
+        // Bind print button click
+        setTimeout(() => {
+            $('.btn-print-invoice').on('click', (e) => {
+                const invoiceId = $(e.currentTarget).data('invoice');
+                this.printInvoice(invoiceId);
+            });
+            
+            $('.btn-new-sale').on('click', () => {
+                dialog.hide();
+            });
+        }, 100);
+        
         this.playSound('success');
+    }
+    
+    // Print invoice
+    async printInvoice(invoiceName) {
+        try {
+            // Check if thermal printer is available
+            if (this.printer && this.state.settings?.enable_thermal_print) {
+                // Get receipt data
+                const response = await frappe.call({
+                    method: 'smart_pos.smart_pos.api.pos_api.get_print_receipt_data',
+                    args: { invoice_name: invoiceName }
+                });
+                
+                if (response.message) {
+                    const receiptData = response.message;
+                    receiptData.change = this.lastInvoiceChange || 0;
+                    await this.printer.printReceipt(receiptData);
+                    frappe.show_alert({ message: this.__('print_sent'), indicator: 'green' });
+                }
+            } else {
+                // Use standard Frappe print
+                const printFormat = this.state.profile?.print_format || this.state.settings?.default_print_format || 'POS Invoice';
+                
+                // Open print dialog
+                frappe.ui.get_print_settings(false, (print_settings) => {
+                    const w = frappe.urllib.get_full_url(
+                        '/api/method/frappe.utils.print_format.download_pdf?' +
+                        'doctype=' + encodeURIComponent('POS Invoice') +
+                        '&name=' + encodeURIComponent(invoiceName) +
+                        '&format=' + encodeURIComponent(printFormat) +
+                        '&no_letterhead=0' +
+                        '&letterhead=' + encodeURIComponent(frappe.boot.sysdefaults.letter_head || '') +
+                        '&settings=' + encodeURIComponent(JSON.stringify(print_settings))
+                    );
+                    
+                    // Open in new window for printing
+                    const printWindow = window.open(w, '_blank');
+                    if (printWindow) {
+                        printWindow.focus();
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Print error:', error);
+            frappe.show_alert({ message: this.__('print_error'), indicator: 'red' });
+        }
     }
     
     // =============================================================================
