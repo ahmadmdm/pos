@@ -416,38 +416,67 @@ class POSTerminal {
     
     async loadSettings() {
         try {
-            const settings = await frappe.call({
-                method: 'smart_pos.smart_pos.api.pos_api.get_smart_pos_settings'
-            });
-            this.state.settings = settings.message || {};
+            if (navigator.onLine) {
+                const settings = await frappe.call({
+                    method: 'smart_pos.smart_pos.api.pos_api.get_smart_pos_settings'
+                });
+                this.state.settings = settings.message || {};
+                // Cache settings for offline
+                await window.POSDatabase.saveSetting('smartPosSettings', this.state.settings);
+            } else {
+                // Load from cache
+                this.state.settings = await window.POSDatabase.getSetting('smartPosSettings') || {};
+            }
             this.state.itemsPerPage = this.state.settings.items_per_page || 20;
         } catch (error) {
             console.error('Failed to load settings:', error);
-            this.state.settings = {};
+            // Try to load from cache
+            this.state.settings = await window.POSDatabase.getSetting('smartPosSettings') || {};
         }
     }
     
     async checkExistingSession() {
         try {
-            const response = await frappe.call({
-                method: 'smart_pos.smart_pos.api.pos_api.get_open_session'
-            });
+            // Check for cached session first (for offline mode)
+            const cachedSession = await window.POSDatabase.getActiveSession();
             
-            if (response.message) {
-                this.state.session = response.message;
-                console.log('Existing session loaded:', {
-                    session_id: this.state.session.session_id || this.state.session.name,
-                    company: this.state.session.company,
-                    pos_profile: this.state.session.pos_profile
+            if (navigator.onLine) {
+                const response = await frappe.call({
+                    method: 'smart_pos.smart_pos.api.pos_api.get_open_session'
                 });
-                await this.loadProfileData(response.message.pos_profile);
-                console.log('Profile loaded:', {
-                    name: this.state.profile.name,
-                    company: this.state.profile.company
-                });
+                
+                if (response.message) {
+                    this.state.session = response.message;
+                    // Cache session for offline
+                    await window.POSDatabase.saveSession({
+                        ...response.message,
+                        id: response.message.session_id || response.message.name,
+                        status: 'Open'
+                    });
+                    console.log('Existing session loaded:', {
+                        session_id: this.state.session.session_id || this.state.session.name,
+                        company: this.state.session.company,
+                        pos_profile: this.state.session.pos_profile
+                    });
+                    await this.loadProfileData(response.message.pos_profile);
+                    console.log('Profile loaded:', {
+                        name: this.state.profile.name,
+                        company: this.state.profile.company
+                    });
+                    this.showPOS();
+                } else {
+                    this.showSessionModal();
+                }
+            } else if (cachedSession) {
+                // Offline mode with cached session
+                this.state.session = cachedSession;
+                this.state.isOffline = true;
+                console.log('📴 Offline mode - Using cached session:', cachedSession.id);
+                await this.loadProfileDataOffline(cachedSession.pos_profile);
                 this.showPOS();
             } else {
-                this.showSessionModal();
+                // Offline with no session
+                this.showOfflineSessionModal();
             }
         } catch (error) {
             console.error('Failed to check session:', error);
@@ -538,18 +567,97 @@ class POSTerminal {
             this.state.profile = profileResponse.message;
             this.state.paymentMethods = this.state.profile.payments || [];
             
-            // Load items from server or IndexedDB
+            // Cache profile for offline use
+            await window.POSDatabase.saveSetting('cachedProfile', this.state.profile);
+            await window.POSDatabase.saveSetting('posProfile', posProfile);
+            
+            // Load items from server
             await this.loadItems();
             
             // Load customers
             await this.loadCustomers();
             
-            // Save POS profile to IndexedDB for offline
-            await window.POSDatabase.saveSetting('posProfile', posProfile);
+            console.log('✅ Data loaded and cached for offline use');
             
         } catch (error) {
             console.error('Failed to load profile data:', error);
+            // Try offline mode
+            await this.loadProfileDataOffline(posProfile);
         }
+    }
+    
+    async loadProfileDataOffline(posProfile) {
+        try {
+            // Load cached profile
+            const cachedProfile = await window.POSDatabase.getSetting('cachedProfile');
+            if (cachedProfile) {
+                this.state.profile = cachedProfile;
+                this.state.paymentMethods = cachedProfile.payments || [];
+            } else {
+                // Create minimal profile for offline
+                this.state.profile = {
+                    name: posProfile,
+                    company: this.state.session?.company || 'Unknown',
+                    warehouse: this.state.session?.warehouse,
+                    payments: [{ mode_of_payment: 'Cash', default: 1 }]
+                };
+                this.state.paymentMethods = this.state.profile.payments;
+            }
+            
+            // Load items from IndexedDB
+            this.state.items = await window.POSDatabase.getAllItems();
+            
+            // Load customers from IndexedDB
+            this.state.customers = await window.POSDatabase.getAllCustomers();
+            
+            // Extract item groups
+            const groups = [...new Set(this.state.items.map(i => i.item_group))];
+            this.state.itemGroups = groups;
+            
+            this.renderCategories();
+            this.renderProducts();
+            
+            console.log('📴 Loaded offline data:', {
+                items: this.state.items.length,
+                customers: this.state.customers.length
+            });
+            
+        } catch (error) {
+            console.error('Failed to load offline data:', error);
+            frappe.msgprint({
+                title: this.__('error'),
+                indicator: 'red',
+                message: 'No cached data available for offline mode'
+            });
+        }
+    }
+    
+    showOfflineSessionModal() {
+        // Show a message that offline mode requires a previously opened session
+        frappe.msgprint({
+            title: '📴 ' + this.__('offline'),
+            indicator: 'orange',
+            message: `
+                <div style="text-align: center; padding: 20px;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+                        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+                        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                    </svg>
+                    <h3 style="margin-top: 16px;">أنت غير متصل بالإنترنت</h3>
+                    <p style="color: #666; margin-top: 8px;">
+                        للعمل في وضع عدم الاتصال، يجب أن تكون قد فتحت جلسة مسبقاً أثناء الاتصال بالإنترنت.
+                    </p>
+                    <p style="color: #666; margin-top: 8px;">
+                        To work offline, you must have opened a session while online first.
+                    </p>
+                </div>
+            `
+        });
     }
     
     // =============================================================================
@@ -558,7 +666,18 @@ class POSTerminal {
     
     async loadItems(forceRefresh = false) {
         try {
-            // Always fetch from server for now to ensure fresh data
+            // Check if online
+            if (!navigator.onLine) {
+                console.log('📴 Offline - Loading items from cache');
+                const cachedItems = await window.POSDatabase.getAllItems();
+                this.state.items = cachedItems;
+                this.extractItemGroups();
+                this.renderCategories();
+                this.renderProducts();
+                return;
+            }
+            
+            // Online - fetch from server
             const response = await frappe.call({
                 method: 'smart_pos.smart_pos.api.pos_api.get_all_items_for_offline',
                 args: { pos_profile: this.state.profile.name }
@@ -566,43 +685,59 @@ class POSTerminal {
             
             let items = response.message || [];
             
-            // Save to IndexedDB
+            // Save to IndexedDB for offline use
             await window.POSDatabase.saveItems(items);
+            console.log(`✅ Cached ${items.length} items for offline use`);
             
             this.state.items = items;
-            
-            // Extract unique item groups
-            const groups = [...new Set(items.map(i => i.item_group))];
-            this.state.itemGroups = groups;
-            
+            this.extractItemGroups();
             this.renderCategories();
             this.renderProducts();
             
         } catch (error) {
             console.error('Failed to load items:', error);
-            // Try to use cached items
+            // Fallback to cached items
             const cachedItems = await window.POSDatabase.getAllItems();
             this.state.items = cachedItems;
+            this.extractItemGroups();
+            this.renderCategories();
             this.renderProducts();
+            
+            if (cachedItems.length === 0) {
+                frappe.show_alert({
+                    message: 'No items available. Please connect to internet and refresh.',
+                    indicator: 'orange'
+                }, 5);
+            }
         }
+    }
+    
+    extractItemGroups() {
+        const groups = [...new Set(this.state.items.map(i => i.item_group))];
+        this.state.itemGroups = groups;
     }
     
     async loadCustomers() {
         try {
-            let customers = await window.POSDatabase.getAllCustomers();
-            
-            if (customers.length === 0) {
-                const response = await frappe.call({
-                    method: 'smart_pos.smart_pos.api.pos_api.get_all_customers_for_offline'
-                });
-                
-                customers = response.message || [];
-                
-                for (const c of customers) {
-                    c.synced = true;
-                }
-                await window.POSDatabase.saveCustomers(customers);
+            // Check online status
+            if (!navigator.onLine) {
+                console.log('📴 Offline - Loading customers from cache');
+                this.state.customers = await window.POSDatabase.getAllCustomers();
+                return;
             }
+            
+            // Try to get from server
+            const response = await frappe.call({
+                method: 'smart_pos.smart_pos.api.pos_api.get_all_customers_for_offline'
+            });
+            
+            let customers = response.message || [];
+            
+            for (const c of customers) {
+                c.synced = true;
+            }
+            await window.POSDatabase.saveCustomers(customers);
+            console.log(`✅ Cached ${customers.length} customers for offline use`);
             
             this.state.customers = customers;
             
@@ -1390,8 +1525,39 @@ class POSTerminal {
         $('#session-profile').text(this.state.profile.name);
         $('#session-user').text(frappe.session.user_fullname);
         
+        // Show offline indicator if in offline mode
+        if (this.state.isOffline || !navigator.onLine) {
+            this.updateOnlineStatus(false);
+            frappe.show_alert({
+                message: '📴 ' + this.__('offline') + ' - Working in offline mode',
+                indicator: 'orange'
+            }, 5);
+        }
+        
+        // Show sync status
+        this.showOfflineDataStatus();
+        
         // Focus on search
         $('#product-search').focus();
+    }
+    
+    async showOfflineDataStatus() {
+        const itemsCount = this.state.items?.length || 0;
+        const customersCount = this.state.customers?.length || 0;
+        const pendingInvoices = await window.POSDatabase.getUnsyncedInvoices();
+        
+        if (pendingInvoices.length > 0) {
+            frappe.show_alert({
+                message: `📤 ${pendingInvoices.length} invoice(s) pending sync`,
+                indicator: 'blue'
+            }, 5);
+        }
+        
+        console.log('📊 Offline data status:', {
+            items: itemsCount,
+            customers: customersCount,
+            pendingInvoices: pendingInvoices.length
+        });
     }
     
     // =============================================================================
@@ -1561,6 +1727,8 @@ class POSTerminal {
         });
         
         // Header buttons
+        $('#btn-sync-offline').on('click', () => this.syncOfflineData());
+        
         $('#btn-fullscreen').on('click', () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
@@ -1753,6 +1921,82 @@ class POSTerminal {
             }
         } catch (e) {
             // Ignore audio errors silently
+        }
+    }
+    
+    // =============================================================================
+    // Offline Data Sync
+    // =============================================================================
+    
+    async syncOfflineData() {
+        if (!navigator.onLine) {
+            frappe.msgprint({
+                title: '📴 Offline',
+                indicator: 'orange',
+                message: 'You are offline. Connect to internet to sync data.'
+            });
+            return;
+        }
+        
+        this.showLoading('Syncing offline data...');
+        this.showSyncingStatus();
+        
+        try {
+            // 1. Sync pending invoices
+            const pendingInvoices = await window.POSDatabase.getUnsyncedInvoices();
+            let syncedCount = 0;
+            let errorCount = 0;
+            
+            for (const invoice of pendingInvoices) {
+                try {
+                    const response = await frappe.call({
+                        method: 'smart_pos.smart_pos.api.pos_api.create_pos_invoice',
+                        args: { invoice_data: JSON.stringify(invoice) }
+                    });
+                    
+                    if (response.message && response.message.name) {
+                        await window.POSDatabase.markInvoiceSynced(invoice.offline_id, response.message.name);
+                        syncedCount++;
+                    }
+                } catch (e) {
+                    console.error('Failed to sync invoice:', invoice.offline_id, e);
+                    errorCount++;
+                }
+            }
+            
+            // 2. Refresh items and customers from server
+            await this.loadItems(true);
+            await this.loadCustomers();
+            
+            // 3. Update sync timestamp
+            await window.POSDatabase.setLastSyncTime(new Date().toISOString());
+            
+            // Show result
+            let message = `✅ Sync completed!\n`;
+            message += `📤 ${syncedCount} invoice(s) synced\n`;
+            message += `📦 ${this.state.items.length} items cached\n`;
+            message += `👥 ${this.state.customers.length} customers cached`;
+            
+            if (errorCount > 0) {
+                message += `\n⚠️ ${errorCount} invoice(s) failed`;
+            }
+            
+            frappe.show_alert({
+                message: message.replace(/\n/g, '<br>'),
+                indicator: errorCount > 0 ? 'orange' : 'green'
+            }, 7);
+            
+            this.updateOnlineStatus(true);
+            
+        } catch (error) {
+            console.error('Sync error:', error);
+            frappe.msgprint({
+                title: 'Sync Error',
+                indicator: 'red',
+                message: error.message
+            });
+        } finally {
+            this.hideLoading();
         }
     }
 }

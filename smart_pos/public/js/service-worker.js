@@ -3,16 +3,22 @@
  * Enables offline functionality and caching
  */
 
-const CACHE_NAME = 'smart-pos-v1';
-const STATIC_CACHE = 'smart-pos-static-v1';
-const DYNAMIC_CACHE = 'smart-pos-dynamic-v1';
+const CACHE_NAME = 'smart-pos-v2';
+const STATIC_CACHE = 'smart-pos-static-v2';
+const DYNAMIC_CACHE = 'smart-pos-dynamic-v2';
 
 // Files to cache immediately
 const STATIC_FILES = [
     '/assets/smart_pos/js/pos_database.js',
     '/assets/smart_pos/js/pos_sync.js',
     '/assets/smart_pos/js/pos_hardware.js',
-    '/assets/smart_pos/css/pos_terminal.css',
+    '/assets/smart_pos/js/pos_performance.js',
+    '/assets/smart_pos/js/pos_hold_recall.js',
+    '/assets/smart_pos/js/pos_shortcuts.js',
+    '/assets/smart_pos/js/pos_discount.js',
+    '/assets/smart_pos/js/pos_printer.js',
+    '/assets/smart_pos/js/smart_pos.bundle.js',
+    '/assets/smart_pos/css/smart_pos.css',
     '/assets/smart_pos/images/placeholder.png',
     '/app/pos-terminal'
 ];
@@ -20,7 +26,10 @@ const STATIC_FILES = [
 // API endpoints to cache
 const API_CACHE_ROUTES = [
     '/api/method/smart_pos.smart_pos.api.pos_api.get_smart_pos_settings',
-    '/api/method/smart_pos.smart_pos.api.pos_api.get_pos_profiles'
+    '/api/method/smart_pos.smart_pos.api.pos_api.get_pos_profiles',
+    '/api/method/smart_pos.smart_pos.api.pos_api.get_pos_profile_data',
+    '/api/method/smart_pos.smart_pos.api.pos_api.get_all_items_for_offline',
+    '/api/method/smart_pos.smart_pos.api.pos_api.get_all_customers_for_offline'
 ];
 
 // Install event - cache static files
