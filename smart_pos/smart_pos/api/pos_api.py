@@ -83,6 +83,23 @@ def get_pos_profile_data(pos_profile: str) -> Dict:
             "customer_group": cg.customer_group
         })
     
+    # Get taxes from taxes_and_charges template
+    taxes = []
+    if profile.taxes_and_charges:
+        template_taxes = frappe.get_all(
+            "Sales Taxes and Charges",
+            filters={"parent": profile.taxes_and_charges},
+            fields=["charge_type", "account_head", "rate", "description", "included_in_print_rate"]
+        )
+        for tax in template_taxes:
+            taxes.append({
+                "charge_type": tax.charge_type,
+                "account_head": tax.account_head,
+                "rate": flt(tax.rate),
+                "description": tax.description,
+                "included_in_print_rate": tax.included_in_print_rate
+            })
+    
     return {
         "name": profile.name,
         "company": profile.company,
@@ -97,6 +114,8 @@ def get_pos_profile_data(pos_profile: str) -> Dict:
         "payments": payments,
         "item_groups": item_groups,
         "customer_groups": customer_groups,
+        "taxes": taxes,
+        "taxes_and_charges": profile.taxes_and_charges,
         "tax_category": profile.tax_category,
         "apply_discount_on": profile.apply_discount_on,
         "print_format": profile.print_format
@@ -171,7 +190,18 @@ def get_open_session(pos_profile: str = None) -> Optional[Dict]:
         as_dict=True
     )
     
+    # Add session_id for consistency with open_session response
+    if session:
+        session["session_id"] = session.name
+    
     return session
+
+
+@frappe.whitelist()
+def get_current_user_pos_settings():
+    """Get POS settings for the current user"""
+    from smart_pos.smart_pos.doctype.pos_user_settings.pos_user_settings import get_user_pos_settings
+    return get_user_pos_settings(frappe.session.user)
 
 
 @frappe.whitelist()
@@ -185,10 +215,21 @@ def open_session(pos_profile: str, opening_cash: float = 0, notes: str = None, d
     # Get POS Profile
     profile = frappe.get_doc("POS Profile", pos_profile)
     
+    # Get user-specific POS settings
+    user_settings = frappe.db.get_value(
+        "POS User Settings",
+        {"user": frappe.session.user, "enabled": 1},
+        ["company", "cost_center", "income_account", "expense_account", "warehouse", "default_customer"],
+        as_dict=True
+    )
+    
+    # Use user settings if available, otherwise use profile settings
+    company = user_settings.company if user_settings else profile.company
+    
     # Create session
     session = frappe.new_doc("POS Session")
     session.pos_profile = pos_profile
-    session.company = profile.company
+    session.company = company
     session.user = frappe.session.user
     session.opening_cash = flt(opening_cash)
     session.opening_time = now_datetime()
@@ -206,13 +247,15 @@ def open_session(pos_profile: str, opening_cash: float = 0, notes: str = None, d
     session.insert()
     frappe.db.commit()
     
+    # Return user settings along with session info
     return {
         "session_id": session.name,
         "pos_profile": session.pos_profile,
         "company": session.company,
         "opening_time": session.opening_time,
         "opening_cash": session.opening_cash,
-        "status": "success"
+        "status": "success",
+        "user_settings": user_settings
     }
 
 
@@ -559,6 +602,16 @@ def create_pos_invoice(invoice_data) -> Dict:
     if isinstance(invoice_data, str):
         invoice_data = json.loads(invoice_data)
     
+    # Get user-specific POS settings first
+    user_settings = frappe.db.get_value(
+        "POS User Settings",
+        {"user": frappe.session.user, "enabled": 1},
+        ["company", "cost_center", "income_account", "expense_account", "warehouse", "default_customer"],
+        as_dict=True
+    )
+    
+    frappe.logger().info(f"User POS Settings: {user_settings}")
+    
     # Check for duplicate offline invoice
     offline_id = invoice_data.get("offline_id")
     if offline_id:
@@ -568,11 +621,82 @@ def create_pos_invoice(invoice_data) -> Dict:
     
     invoice = frappe.new_doc("POS Invoice")
     
-    # Set basic fields
-    invoice.company = invoice_data.get("company")
+    # Set company - Priority: user_settings > invoice_data > session > profile
+    company = None
     
-    # Get customer - use from invoice data, or from POS Profile, or from settings
+    # 1. First try user settings
+    if user_settings and user_settings.company:
+        company = user_settings.company
+        frappe.logger().info(f"Company from user_settings: {company}")
+    
+    # 2. Then try invoice data
+    if not company:
+        company = invoice_data.get("company")
+        frappe.logger().info(f"Company from invoice_data: {company}")
+    
+    # 3. Then try session
+    if not company and invoice_data.get("pos_session"):
+        company = frappe.db.get_value("POS Session", invoice_data.get("pos_session"), "company")
+        frappe.logger().info(f"Company from session: {company}")
+    
+    # 4. Finally try POS Profile
+    if not company and invoice_data.get("pos_profile"):
+        company = frappe.db.get_value("POS Profile", invoice_data.get("pos_profile"), "company")
+        frappe.logger().info(f"Company from profile: {company}")
+    
+    if not company:
+        frappe.throw(_("Company is required. Please check your POS User Settings or POS Profile."))
+    
+    frappe.logger().info(f"Final company for invoice: {company}")
+    invoice.company = company
+    
+    # Get cost center - MUST belong to the selected company
+    cost_center = None
+    
+    # 1. First try from user settings
+    if user_settings and user_settings.cost_center:
+        # Verify it belongs to the correct company
+        cc_company = frappe.db.get_value("Cost Center", user_settings.cost_center, "company")
+        if cc_company == company:
+            cost_center = user_settings.cost_center
+            frappe.logger().info(f"Cost center from user_settings: {cost_center}")
+    
+    # 2. If not found or invalid, get from company default
+    if not cost_center:
+        cost_center = frappe.db.get_value("Company", company, "cost_center")
+        frappe.logger().info(f"Cost center from company default: {cost_center}")
+    
+    # 3. If still not found, find any cost center for this company
+    if not cost_center:
+        cost_center = frappe.db.get_value(
+            "Cost Center", 
+            {"company": company, "is_group": 0}, 
+            "name",
+            order_by="creation asc"
+        )
+        frappe.logger().info(f"Cost center found for company: {cost_center}")
+    
+    # 4. Final validation - ensure cost center belongs to company
+    if cost_center:
+        cc_company = frappe.db.get_value("Cost Center", cost_center, "company")
+        if cc_company != company:
+            frappe.logger().warning(f"Cost center {cost_center} belongs to {cc_company}, not {company}. Finding correct one.")
+            cost_center = frappe.db.get_value(
+                "Cost Center", 
+                {"company": company, "is_group": 0}, 
+                "name"
+            )
+    
+    frappe.logger().info(f"Final cost_center for invoice: {cost_center}")
+    
+    # Set cost center on invoice
+    if cost_center:
+        invoice.cost_center = cost_center
+    
+    # Get customer - Priority: invoice_data > user_settings > POS Profile > Smart POS Settings
     customer = invoice_data.get("customer")
+    if not customer and user_settings and user_settings.default_customer:
+        customer = user_settings.default_customer
     if not customer and invoice_data.get("pos_profile"):
         customer = frappe.db.get_value("POS Profile", invoice_data.get("pos_profile"), "customer")
     if not customer:
@@ -582,7 +706,7 @@ def create_pos_invoice(invoice_data) -> Dict:
         except Exception:
             pass
     if not customer:
-        frappe.throw(_("Please select a customer or set a default customer in POS Profile or Smart POS Settings"))
+        frappe.throw(_("Please select a customer or set a default customer in POS User Settings"))
     
     invoice.customer = customer
     invoice.pos_profile = invoice_data.get("pos_profile")
@@ -602,13 +726,21 @@ def create_pos_invoice(invoice_data) -> Dict:
         invoice.sync_timestamp = now_datetime()
         invoice.device_id = invoice_data.get("device_id")
     
-    # Set warehouse
+    # Set warehouse - Priority: user_settings > invoice_data > profile
     profile = frappe.get_doc("POS Profile", invoice.pos_profile)
-    warehouse = invoice_data.get("warehouse") or profile.warehouse
     
-    # Add items
+    warehouse = None
+    if user_settings and user_settings.warehouse:
+        warehouse = user_settings.warehouse
+    else:
+        warehouse = invoice_data.get("warehouse") or profile.warehouse
+    
+    # Use cost_center already determined above (from user_settings or company default)
+    frappe.logger().info(f"Using cost_center: {cost_center}, warehouse: {warehouse}")
+    
+    # Add items with correct cost center - FORCE cost center to match company
     for item in invoice_data.get("items", []):
-        invoice.append("items", {
+        item_data = {
             "item_code": item.get("item_code"),
             "item_name": item.get("item_name"),
             "qty": flt(item.get("qty")),
@@ -616,18 +748,31 @@ def create_pos_invoice(invoice_data) -> Dict:
             "warehouse": item.get("warehouse") or warehouse,
             "uom": item.get("uom") or item.get("stock_uom"),
             "discount_percentage": flt(item.get("discount_percentage")),
-            "discount_amount": flt(item.get("discount_amount"))
-        })
+            "discount_amount": flt(item.get("discount_amount")),
+            "cost_center": cost_center  # Always set cost center
+        }
+        # Set income account from user settings if available
+        if user_settings and user_settings.income_account:
+            item_data["income_account"] = user_settings.income_account
+        invoice.append("items", item_data)
     
-    # Add payments
+    # Add payments - get correct account for this company
     for payment in invoice_data.get("payments", []):
+        mode_of_payment = payment.get("mode_of_payment")
+        # Get the correct account for this mode of payment and company
+        account = frappe.db.get_value(
+            "Mode of Payment Account",
+            {"parent": mode_of_payment, "company": company},
+            "default_account"
+        )
         invoice.append("payments", {
-            "mode_of_payment": payment.get("mode_of_payment"),
+            "mode_of_payment": mode_of_payment,
             "amount": flt(payment.get("amount")),
-            "account": payment.get("account")
+            "account": account or payment.get("account")
         })
     
-    # Add taxes if any
+    # Add taxes - from invoice_data OR from POS Profile taxes_and_charges template
+    taxes_added = False
     for tax in invoice_data.get("taxes", []):
         invoice.append("taxes", {
             "charge_type": tax.get("charge_type"),
@@ -636,6 +781,30 @@ def create_pos_invoice(invoice_data) -> Dict:
             "tax_amount": flt(tax.get("tax_amount")),
             "description": tax.get("description")
         })
+        taxes_added = True
+    
+    # If no taxes from invoice_data, get from POS Profile taxes_and_charges template
+    if not taxes_added and invoice.pos_profile:
+        taxes_template = frappe.db.get_value("POS Profile", invoice.pos_profile, "taxes_and_charges")
+        if taxes_template:
+            # Set the taxes_and_charges field
+            invoice.taxes_and_charges = taxes_template
+            # Get taxes from template
+            template_taxes = frappe.get_all(
+                "Sales Taxes and Charges",
+                filters={"parent": taxes_template},
+                fields=["charge_type", "account_head", "rate", "description", "included_in_print_rate", "included_in_paid_amount"]
+            )
+            for tax in template_taxes:
+                invoice.append("taxes", {
+                    "charge_type": tax.charge_type,
+                    "account_head": tax.account_head,
+                    "rate": flt(tax.rate),
+                    "description": tax.description or tax.account_head,
+                    "included_in_print_rate": tax.included_in_print_rate,
+                    "included_in_paid_amount": tax.included_in_paid_amount
+                })
+            frappe.logger().info(f"Added {len(template_taxes)} taxes from template: {taxes_template}")
     
     # Set discount
     if invoice_data.get("discount_amount"):
@@ -643,8 +812,25 @@ def create_pos_invoice(invoice_data) -> Dict:
     if invoice_data.get("additional_discount_percentage"):
         invoice.additional_discount_percentage = flt(invoice_data.get("additional_discount_percentage"))
     
-    # Save and submit
+    # CRITICAL: Force set cost center again before insert to override any defaults
+    invoice.cost_center = cost_center
+    for item in invoice.items:
+        item.cost_center = cost_center
+    
+    frappe.logger().info(f"Before insert - Invoice cost_center: {invoice.cost_center}")
+    frappe.logger().info(f"Before insert - Items cost_centers: {[i.cost_center for i in invoice.items]}")
+    
+    # Save and submit with flags to skip certain validations
+    invoice.flags.ignore_validate = False
     invoice.insert()
+    
+    # Force update cost center after insert if it was changed by hooks
+    if invoice.cost_center != cost_center:
+        frappe.logger().warning(f"Cost center changed after insert! Forcing back to {cost_center}")
+        invoice.cost_center = cost_center
+        for item in invoice.items:
+            item.cost_center = cost_center
+        invoice.save()
     
     if invoice_data.get("submit", True):
         invoice.submit()

@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"type\": \"header\", \"data\": {\"text\": \"AhmadPOS - نقطة البيع\", \"level\": 2}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"فتح نقطة البيع\", \"link_to\": \"pos-terminal\", \"doc_view\": \"\", \"color\": \"Blue\"}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"جلسات البيع\", \"link_to\": \"POS Session\", \"doc_view\": \"List\", \"color\": \"Green\"}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"فواتير البيع\", \"link_to\": \"POS Invoice\", \"doc_view\": \"List\", \"color\": \"Yellow\"}}]",
+ "content": "[{\"type\": \"header\", \"data\": {\"text\": \"AhmadPOS - نقطة البيع\", \"level\": 2}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"فتح نقطة البيع\", \"link_to\": \"pos-terminal\", \"doc_view\": \"\", \"color\": \"Blue\"}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"جلسات البيع\", \"link_to\": \"POS Session\", \"doc_view\": \"List\", \"color\": \"Green\"}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"فواتير البيع\", \"link_to\": \"POS Invoice\", \"doc_view\": \"List\", \"color\": \"Yellow\"}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"إعدادات المستخدمين\", \"link_to\": \"POS User Settings\", \"doc_view\": \"List\", \"color\": \"Orange\"}}]",
  "creation": "2026-01-01 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -60,9 +60,20 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "إعدادات مستخدمي POS",
+   "link_count": 0,
+   "link_to": "POS User Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "only_for": "System Manager,Accounts Manager,Accounts User",
+   "type": "Link"
   }
  ],
- "modified": "2026-01-01 00:00:00.000000",
+ "modified": "2026-01-02 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Smart POS",
  "name": "AhmadPOS",
@@ -93,6 +104,15 @@
    "label": "فواتير البيع",
    "link_to": "POS Invoice",
    "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "إعدادات المستخدمين",
+   "link_to": "POS User Settings",
+   "type": "DocType",
+   "restrict_to_domain": "",
+   "only_for": "System Manager,Accounts Manager,Accounts User"
   }
  ],
  "title": "AhmadPOS"

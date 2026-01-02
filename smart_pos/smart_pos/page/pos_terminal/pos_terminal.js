@@ -435,7 +435,16 @@ class POSTerminal {
             
             if (response.message) {
                 this.state.session = response.message;
+                console.log('Existing session loaded:', {
+                    session_id: this.state.session.session_id || this.state.session.name,
+                    company: this.state.session.company,
+                    pos_profile: this.state.session.pos_profile
+                });
                 await this.loadProfileData(response.message.pos_profile);
+                console.log('Profile loaded:', {
+                    name: this.state.profile.name,
+                    company: this.state.profile.company
+                });
                 this.showPOS();
             } else {
                 this.showSessionModal();
@@ -830,20 +839,35 @@ class POSTerminal {
         const subtotal = this.state.cart.reduce((sum, item) => sum + item.amount, 0);
         const discount = this.state.cart.reduce((sum, item) => sum + item.discount_amount, 0);
         
-        // Calculate tax (if applicable)
+        // Calculate tax from POS Profile tax rate
         let tax = 0;
-        // TODO: Apply tax based on tax template
+        let taxRate = 0;
         
-        const total = subtotal + tax;
+        // Get tax rate from profile
+        if (this.state.profile && this.state.profile.taxes && this.state.profile.taxes.length > 0) {
+            taxRate = this.state.profile.taxes.reduce((sum, t) => sum + (t.rate || 0), 0);
+        } else if (this.state.taxRate) {
+            taxRate = this.state.taxRate;
+        }
+        
+        // Calculate tax on subtotal after discount
+        const taxableAmount = subtotal - discount;
+        tax = taxableAmount * (taxRate / 100);
+        
+        const total = subtotal - discount + tax;
+        
+        // Store tax info in state
+        this.state.taxRate = taxRate;
+        this.state.taxAmount = tax;
         
         $('#cart-subtotal').html(this.formatCurrency(subtotal));
-        $('#cart-tax').html(this.formatCurrency(tax));
+        $('#cart-tax').html(this.formatCurrency(tax) + (taxRate > 0 ? ` (${taxRate}%)` : ''));
         $('#cart-discount').html('-' + this.formatCurrency(discount));
         $('#cart-total').html(this.formatCurrency(total));
         $('#pay-amount').html(this.formatCurrency(total));
         
-        // Toggle tax/discount rows
-        $('#tax-row').toggle(tax > 0);
+        // Toggle tax/discount rows - show tax row if tax rate is configured
+        $('#tax-row').toggle(taxRate > 0);
         $('#discount-row').toggle(discount > 0);
         
         // Enable/disable pay button
@@ -927,13 +951,23 @@ class POSTerminal {
     showPaymentModal() {
         if (this.state.cart.length === 0) return;
         
-        // Calculate total from cart state instead of DOM
+        // Calculate total from cart state including tax
         const subtotal = this.state.cart.reduce((sum, item) => sum + item.amount, 0);
-        const tax = 0; // TODO: Apply tax
-        const total = subtotal + tax;
+        const discount = this.state.cart.reduce((sum, item) => sum + item.discount_amount, 0);
+        
+        // Use stored tax rate or calculate
+        let taxRate = this.state.taxRate || 0;
+        if (!taxRate && this.state.profile && this.state.profile.taxes && this.state.profile.taxes.length > 0) {
+            taxRate = this.state.profile.taxes.reduce((sum, t) => sum + (t.rate || 0), 0);
+        }
+        
+        const taxableAmount = subtotal - discount;
+        const tax = taxableAmount * (taxRate / 100);
+        const total = subtotal - discount + tax;
         
         this.state.payments = [];
         this.state.paymentTotal = total;
+        this.state.taxAmount = tax;
         this.state.currentPaymentMethod = 'Cash';
         this.state.paymentInput = '';
         
@@ -1072,11 +1106,24 @@ class POSTerminal {
         this.showLoading(this.__('loading_pos'));
         
         try {
+            // Get company from session first, then profile as fallback
+            const company = this.state.session?.company || this.state.profile?.company;
+            
+            if (!company) {
+                frappe.msgprint({
+                    title: this.__('error'),
+                    indicator: 'red',
+                    message: 'Company not set in session or profile'
+                });
+                this.hideLoading();
+                return;
+            }
+            
             const invoiceData = {
-                company: this.state.profile.company,
+                company: company,
                 customer: customer,
                 pos_profile: this.state.profile.name,
-                pos_session: this.state.session.session_id,
+                pos_session: this.state.session.name || this.state.session.session_id,
                 warehouse: this.state.profile.warehouse,
                 posting_date: frappe.datetime.get_today(),
                 posting_time: frappe.datetime.now_time(),
